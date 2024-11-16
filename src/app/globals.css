@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Helvetica, sans-serif;
+  /* overflow: hidden; */
+}
+
+.spline-container {
+  /* position: absolute; */
+  display: inline-block;
+  width: 100vw; 
+  height: 100vh;
+  border: 2px solid silver; 
+  border-radius: 15px; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); 
+  backdrop-filter: blur(10px); 
+  background: rgba(255, 255, 255, 0.1); 
+  overflow: hidden; 
+}
+
+.content-overlay {
+  position: relative;
+  padding: 20px;
+}
+
+.centered-button-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* z-index: 3; */
+}
+
+.glass-button {
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+}
+
+.grid {
+  width: 80vw;
+}
+
+.grid > div {
+  padding: 1rem 2rem;
+  font-size: 1.25rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  height: 17vh;
+}
+
+svg{
+  margin: 0 auto;
+  width: 25vw;
+  height: auto;
+}

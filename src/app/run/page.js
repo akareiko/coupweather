@@ -20,6 +20,15 @@ export default function Home() {
                 <Spline
                     scene="https://prod.spline.design/2vgCtgDxj3AH21Bg/scene.splinecode" 
                 />
+                <div
+                    className="bg-black fixed bottom-0 right-0 w-[25vw] h-[5vh] mr-4 mb-4 flex items-center justify-center p-2"
+                >
+                    <p 
+                        className="text-white text-xs font-bold break-words"
+                    >
+                        Earth spinnin model
+                    </p>
+                </div>
             </div>
             <div className="absolute flex min-w-full justify-center z-10">
                 <Grid />

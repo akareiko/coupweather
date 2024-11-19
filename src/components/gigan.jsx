@@ -1,4 +1,4 @@
-import tt from "/Users/legato/Documents/GitHub/coupte/public/venus.jpg"
+import tt from "../../public/venus.jpg"
 import Image from "next/image"
 
 export default function Gigan() {

@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image"
-import tt from "/Users/legato/Documents/GitHub/coupte/public/tt.jpg"
+import tt from "../../public/tt.jpg"
 import { motion, useScroll, useTransform  } from "motion/react"
 
 export default function White() {

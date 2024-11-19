@@ -5,6 +5,7 @@ import Gigan from "@/components/gigan";
 import White from "@/components/whit"
 import WhiteAfter from "@/components/whitafter"
 
+
 export default function Home() {
   return (
     <main>

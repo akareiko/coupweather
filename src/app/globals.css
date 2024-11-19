@@ -66,9 +66,22 @@ body {
   width: 80vw;
 }
 
-.grid > div {
+#search {
   padding: 1rem 2rem;
-  font-size: 1.25rem;
+  font-size: 1rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  height: 7vh;
+}
+
+.grid > div {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
   color: white;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
@@ -76,11 +89,10 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
-  height: 17vh;
 }
 
-svg{
+/* svg{
   margin: 0 auto;
   width: 25vw;
   height: auto;
-}
+} */

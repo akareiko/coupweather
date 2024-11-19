@@ -12,6 +12,12 @@ export default function Home() {
         <div className="spline-container" >
           <Spleen />
           <MotionButton />
+          <div
+            className="bg-black fixed bottom-0 right-0 w-[25vw] h-[5vh] mr-4 mb-4 flex items-center justify-center p-2"
+          >
+            <p className="text-white text-xs font-bold break-words">
+              Abduction of Europa, 1727 by Noël-Nicolas Coypel</p>
+          </div>
         </div>
       <Blob/>
       <Gigan />

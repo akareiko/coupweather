@@ -1,6 +1,17 @@
-export default function HourlyForecast({ weatherData }) {
+import { motion } from "motion/react";
+
+export default function HourlyForecast({ weatherData, onClick }) {
     if (!weatherData?.hourly) {
-        return <p className="text-sm text-gray-500">Loading...</p>;
+        return(
+            <motion.div
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className='col-span-6 row-span-8 md:row-span-1 overflow-x-scroll no-scrollbar' 
+                onClick={onClick}
+            >
+                <p className="text-sm text-white/70">Loading...</p>
+            </motion.div>
+        ); 
     }
 
     const hours = weatherData.hourly.slice(0, 12);
@@ -32,8 +43,15 @@ export default function HourlyForecast({ weatherData }) {
     });
 
     return (
-        <div className="flex justify-between items-center space-x-4">
-            {hourlyItems}
-        </div>
+        <motion.div
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            className='col-span-6 row-span-8 md:row-span-1 overflow-x-scroll no-scrollbar' 
+            onClick={onClick}
+        >
+            <div className="flex justify-between items-center space-x-10">
+                {hourlyItems}
+            </div>
+        </motion.div>
     );
 }

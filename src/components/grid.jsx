@@ -1,91 +1,80 @@
 'use client';
-
 import { useState, useEffect, useRef } from 'react';
-import HourlyForecast from './subgrid/HourlyForecast';
-import DailyForecast from './subgrid/DailyForecast';
-import AirQuality from './subgrid/AirQuality';
-import WindMap from './subgrid/WindMap';
-import Overlay from './subgrid/Overlay';
-import { motion } from "motion/react";
+import { motion, useScroll, useTransform } from "motion/react";
+import GridTable from './gridTable';
+import { fetchAirQualityData, fetchCityData, fetchWeatherData } from './utils/api';
+import Search from './subgrid/search';
+import City from './city';
+import WeatherBackground from './weatherBackground';
 
 export default function Grid() {
-    const [showOverlay, setShowOverlay] = useState(false);
-    const [overlayType, setOverlayType] = useState(null);
-    const [overlayData, setOverlayData] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
     const [airQualityData, setAirQualityData] = useState(null);
     const [weatherData, setWeatherData] = useState(null);
     const [location, setLocation] = useState({ latitude: null, longitude: null });
-    const gridRef = useRef(null);
+    const [mapLocation, setMapLocation] = useState({ lat: 35.1731, lon: 129.0714 });
+    const [city, setCity] = useState('');
+    const [scrolled, setScrolled] = useState(false);
+    const insideRef = useRef(null);
+    const { scrollY } = useScroll({ container: insideRef });
+    const yOffset = useTransform(scrollY, [-100, 100], isMobile ? [0, 0] : [0, -100]);
+    const yOffsetCity = useTransform(scrollY, [-100, 100], isMobile ? [0, 0] : [0, 30]);
+    const [searchCity, setSearchCity] = useState('');
+    const now = new Date();
+    const startOfToday = new Date(now.setHours(0, 0, 0, 0)).getTime() / 1000;
+    const endOfToday = startOfToday + 86400; 
+    const todayData = weatherData?.hourly.filter(
+        (entry) => entry.dt >= startOfToday && entry.dt < endOfToday
+    );
+    const maxUVI = todayData?.reduce((max, entry) => Math.max(max, entry.uvi), 0);
+    const uviRanges = [
+        { range: [0, 2], message: "Low for the day" },
+        { range: [3, 5], message: "Moderate for the day" },
+        { range: [6, 7], message: "Will be high today" },
+        { range: [8, 10], message: "Extreme, avoid sun" },
+        { range: [11, Infinity], message: "UV index is Extreme. Avoid the sun entirely." },
+    ];
+    const uviMessage =
+        uviRanges.find(({ range }) => maxUVI >= range[0] && maxUVI <= range[1])?.message ||
+        "No UV data available.";
 
-    const fetchAirQualityData = async (latitude, longitude) => {
-        try {
-            const response = await fetch(
-                'https://airquality.googleapis.com/v1/currentConditions:lookup?key=AIzaSyAfZbGUWpif8YB63j63UKVbsTplI8ZdvBE',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        location: {
-                            latitude,
-                            longitude,
-                        },
-                        extraComputations: [
-                            "HEALTH_RECOMMENDATIONS",
-                            "DOMINANT_POLLUTANT_CONCENTRATION",
-                            "POLLUTANT_CONCENTRATION",
-                            "LOCAL_AQI",
-                            "POLLUTANT_ADDITIONAL_INFO",
-                        ],
-                    }),
-                }
-            );
-            const result = await response.json();
-            setAirQualityData(result);
-        } catch (error) {
-            console.error('Error fetching air quality data:', error);
-        }
-    };
-
-    const fetchWeatherData = async (latitude, longitude) => {
-        try {
-            const response = await fetch(
-                `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&appid=d5c90f7ff7a52c654ba7724998f3c44a`
-            );
-            const result = await response.json();
-            setWeatherData(result);
-        } catch (error) {
-            console.error('Error fetching weather data:', error);
-        }
-    };
-
-    const handleHourlyForecastClick = () => {
-        setOverlayType('chart');
-        setOverlayData(weatherData);
-        setShowOverlay(true);
-    };
-
-    const handleAirQualityClick = () => {
-        setOverlayType('airQuality');
-        setOverlayData(airQualityData);
-        setShowOverlay(true);
-    };
-
-    const handleOutsideClick = (e) => {
-        if (gridRef.current && !gridRef.current.contains(e.target)) {
-            setShowOverlay(false);
+    const handleScroll = () => {
+        if (insideRef.current) {
+            if (insideRef.current.scrollTop > 30) {
+                setScrolled(true);
+            } else {
+                setScrolled(false);
+            }
         }
     };
 
     useEffect(() => {
-        const getCurrentLocation = () => {
+        if (insideRef.current) {
+            insideRef.current.addEventListener('scroll', handleScroll);
+        }
+        return () => {
+            if (insideRef.current) {
+                insideRef.current.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        const getCurrentLocation = async () => {
             if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((position) => {
+                navigator.geolocation.getCurrentPosition(async (position) => {
                     const { latitude, longitude } = position.coords;
                     setLocation({ latitude, longitude });
-                    fetchAirQualityData(latitude, longitude);
-                    fetchWeatherData(latitude, longitude);
+                    try {
+                        const airQualityData = await fetchAirQualityData(latitude, longitude);
+                        setAirQualityData(airQualityData);
+                        const weatherData = await fetchWeatherData(latitude, longitude);
+                        setWeatherData(weatherData);
+                        const cityData = await fetchCityData(latitude, longitude);
+                        setCity(cityData);
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                    }
                 }, (error) => {
                     console.error('Error getting location:', error);
                 });
@@ -95,116 +84,77 @@ export default function Grid() {
         };
 
         getCurrentLocation();
-        document.addEventListener('click', handleOutsideClick);
-        return () => {
-            document.removeEventListener('click', handleOutsideClick);
-        };
     }, []);
 
+    const handleSearch = async () => {
+        if (!searchCity.trim()) return;
+        
+        try {
+            const geocodeResponse = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchCity)}`
+            );
+            const geocodeData = await geocodeResponse.json();
+    
+            if (geocodeData.length === 0) {
+                console.error('City not found')
+                return;
+            }
+    
+            const { lat, lon } = geocodeData[0];
+            setLocation({ latitude: lat, longitude: lon });
+            setCity(geocodeData[0].display_name.split(',')[0]);
+            setMapLocation({ lat, lon });
+    
+            const airQualityData = await fetchAirQualityData(lat, lon);
+            setAirQualityData(airQualityData);
+    
+            const weatherData = await fetchWeatherData(lat, lon);
+            setWeatherData(weatherData);
+        } catch (error) {
+            console.error('Error during search:', error);
+        }
+    };
+    
     return (
-        <div>
-            {/* <HourlyChart weatherData={weatherData}/> */}
-            {/* <div id='search'>search</div> */}
-            <div className="flex min-h-screen items-center">
-                <div className="grid grid-cols-6 grid-rows-5 gap-4 h-[70vh]" ref={gridRef}>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className='col-span-6'
-                        onClick={handleHourlyForecastClick}
-                    >
-                        {/* <h3 className="text-lg mb-4">Hourly Forecast</h3> */}
-                        <HourlyForecast weatherData={weatherData} />
+        <div className='md:fixed min-w-full'>
+            <WeatherBackground weatherData={weatherData} />
+            <div className="flex justify-center">
+                <div className='hidden md:block flex'>
+                    <motion.div 
+                        style={{ 
+                            y: yOffsetCity
+                        }}
+                        className='w-[100%] justify-center flex transition-all duration-300 top-[20vh] h-[40vh] items-center'
+                    > 
+                        <City city={city} weatherData={weatherData} scrolled={scrolled}/> 
                     </motion.div>
                     <motion.div 
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        className='col-span-2 row-span-3'
-                    >
-                        <DailyForecast weatherData={weatherData} />
+                        className='relative parent'
+                        style={{
+                            y: yOffset,
+                        }}>
+                        <div className='inside no-scrollbar' ref={insideRef}>
+                            <Search onClick={handleSearch} value={searchCity} onChange={(e) => setSearchCity(e.target.value)}/>
+                            <GridTable airQualityData={airQualityData} weatherData={weatherData} uviMessage={uviMessage} lat={mapLocation.lat} lon={mapLocation.lon}/>
+                        </div>
                     </motion.div>
-                    <AirQuality airQualityData={airQualityData} onClick={handleAirQualityClick} />
-                    <WindMap weatherData={weatherData} />
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                    <p className='font-light text-gray-400'>uv index</p>
-                        {weatherData ? (
-                            <p className='text-xl font-bold'>{weatherData.current.uvi}</p>
-                        ) : (
-                            <p className="text-sm text-gray-500">Loading...</p>
-                        )}
-                    </motion.div>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <p className='font-light text-gray-400'>sunrise</p>
-                        {weatherData ? (
-                            <p className='text-xl font-bold'>{new Date(weatherData.current.sunrise * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                        ) : (
-                            <p className="text-sm text-gray-500">Loading...</p>
-                        )}
-                    </motion.div>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <p className='font-light text-gray-400'>feels like</p>
-                        {weatherData ? (
-                            <p  className='text-xl font-bold'>{(weatherData.current.feels_like - 273.15).toFixed(1)}°</p>
-                        ) : (
-                            <p className="text-sm text-gray-500">Loading...</p>
-                        )}
-                    </motion.div>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <p className='font-light text-gray-400'>humidity</p>
-                        {weatherData ? (
-                            <>
-                                <p className="text-xl font-bold">{weatherData.current.humidity}%</p>
-                                <p className="text-sm font-medium">The dew point is {(weatherData.current.dew_point - 273.15).toFixed(1)}°</p>
-                            </>
-                        ) : (
-                            <p className="text-sm text-gray-500">Loading...</p>
-                        )}
-                    </motion.div>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <p className='font-light text-gray-400'>pressure</p>
-                        {weatherData ? (
-                            <p className="text-xl font-bold">{weatherData.current.pressure} hPa</p>
-                        ) : (
-                            <p className="text-sm text-gray-500">Loading...</p>
-                        )}
-                    </motion.div>
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                    >
-                        <p className='font-light text-gray-400'>visibility</p>
-                        {weatherData ? (
-                            <p className="text-xl font-bold">{weatherData.current.visibility / 1000} Km</p>
-                        ) : (
-                            <p className="text-sm text-gray-500">Loading...</p>
-                        )}
-                    </motion.div>
+                </div>
 
+                <div className='block md:hidden z-10'>
+                    <div className='flex flex-col overflow-x-hidden'>
+                        <div className='mt-40'>
+                            <City city={city} weatherData={weatherData} scrolled={scrolled}/> 
+                        </div>
+                        <div className='mt-20'>
+                            <Search onClick={handleSearch} value={searchCity} onChange={(e) => setSearchCity(e.target.value)}/>
+                        </div>
+                        <div className="overflow-hidden" >
+                            <GridTable airQualityData={airQualityData} weatherData={weatherData} uviMessage={uviMessage}/>
+                        </div>
+                        <div className='mb-40 text-center'>weather</div>
+                    </div>
                 </div>
             </div>
-            {showOverlay && 
-                <Overlay 
-                    type={overlayType} 
-                    data={overlayData} 
-                    onClose={() => setOverlayType(null)} 
-                />}
         </div>
     );
 }
-
-
